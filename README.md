@@ -4,4 +4,4 @@ The files ending in `.R` are scripts for analyses and simulations conducted in R
 
 The analyses require installation of the `RStan` package. Following [these instructions](https://github.com/stan-dev/rstan/wiki/Installing-RStan-from-Source) will ensure a smooth installation.
 
-The `som.html` file contains a high-level summary of the analysis files.
+The `som.html` file contains a high-level summary of the R scripts.
