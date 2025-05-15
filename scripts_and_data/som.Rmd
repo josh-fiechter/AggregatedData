@@ -21,10 +21,6 @@ options(mc.cores = ncores)
 set.seed(123)
 ```
 
-```{r message = FALSE, warning = FALSE, include = FALSE}
-load(here("fiechter_2025_results.RData"))
-```
-
 ## Section 1: Fit candidate models to testing-effect data
 
 ### 1.1: Read in data
@@ -82,7 +78,7 @@ I'll place unit-Cauchy priors on all parameters (i.e., `Cauchy(0,1)`). These pri
 
 2. They are appropriate for calculating Bayes factors for discrete and scaled predictors (i.e., such as the ones that are used in this model).
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_1 <- bf(test_effect ~ 0 + Intercept + Feedback*InitRet_z*PropPracCorrect_z,
           family = gaussian)
 
@@ -102,7 +98,7 @@ fit_Aggregate <- brm(bf_1,
 
 I'll wait to look at estimates until I have fits for all three candidate models. For now, I'll save two Bayes factors that are calculated via Savage-Dickey ratios^4^.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_Aggregate <- hypothesis(fit_Aggregate, 
                       c("Intercept = 0", 
                         "Intercept + FeedbackTRUE = 0"))
@@ -110,7 +106,7 @@ bf_Aggregate <- hypothesis(fit_Aggregate,
 
 As a final step for this model, I'll generate standardized effect sizes (i.e., <i>d</i>). In the case of the `Aggregate` model, I'll divide posterior draws for our effects of interest by draws pertaining to `Sigma`^5^.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 d_agg <-
   as_draws_df(fit_Aggregate) %>%
   mutate(fb = b_Intercept + b_FeedbackTRUE,
@@ -132,7 +128,7 @@ I'll next model the unaggregated data via a multivariate multilevel generalized 
 
 As a preliminary step, I need to prep the data by adding indicators for the relevant subsets of observations pertaining to the `InitRet` and `NumPracCorrect` response variables (see below for more details on those variables).
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat %>%
   mutate(set1 = ifelse(Condition == "Ret",
                        TRUE,
@@ -178,7 +174,7 @@ This model that incorporates three response variables is favored in an approxima
 
 Once again, I'll place unit-Cauchy priors on all parameters.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_1 <- bf(Correct ~ Condition*Feedback +
              (1|r1|gr(Sub, by = Feedback)) +
              (1|r2|Cue) +
@@ -222,7 +218,7 @@ fit_Intercept <- brm(bf_1 + bf_2 + bf_3 + set_rescor(FALSE),
 
 I will once again save two Bayes factors that correspond to testing effects with and without feedback.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_Intercept <- hypothesis(fit_Intercept,
                            c("Correct_ConditionStudy = 0",
                              "Correct_FeedbackTRUE = 
@@ -233,7 +229,7 @@ bf_Intercept <- hypothesis(fit_Intercept,
 
 And I will once again use posterior draws to estimate a standardized effect size, <i>d</i>. In the case of the `Intercept` model, I'll divide posterior draws for our effects of interests by sums of draws pertaining to group-level `sd` coefficients^5^. I will only use `sd` coefficients that correspond to the `Correct` outcome variable.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 d_int <-
   as_draws_df(fit_Intercept, variable = c("^b_", "sd_"), regex = TRUE) %>%
   select(contains("_Correct")) %>%
@@ -257,7 +253,7 @@ Finally, I will fit a multivariate multilevel model that incorporates maximal gr
 
 This `Maximal` model incorporates all the features of the `Intercept` model, plus all possible group-level effects of `Feedback`, `Condition` (for the `Correct` outcome), and `Feedback:Condition` (for the `Correct` outcome). 
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_1 <- bf(Correct ~ Condition*Feedback +
              (Condition|r1|gr(Sub, by = Feedback)) +
              (Condition*Feedback|r2|Cue) +
@@ -298,7 +294,7 @@ fit_Maximal <- brm(bf_1 + bf_2 + bf_3 + set_rescor(FALSE),
 
 I will once again save two Bayes factors that correspond to testing effects with and without feedback.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf_Maximal <- hypothesis(fit_Maximal,
                       c("Correct_ConditionStudy = 0",
                         "Correct_FeedbackTRUE = 
@@ -309,7 +305,7 @@ bf_Maximal <- hypothesis(fit_Maximal,
 
 And I will once again use posterior draws to estimate a standardized effect size, <i>d</i>. Once again, I'll divide posterior draws for our effects of interests by sums of draws pertaining to group-level `sd` coefficients. I will also once again only use `sd` coefficients that correspond to the `Correct` outcome variable.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 d_max <-
   as_draws_df(fit_Maximal, variable = c("^b_", "sd_"), regex = TRUE) %>%
   select(contains("_Correct")) %>%
@@ -333,7 +329,7 @@ Previous work has suggested that maximal group-level effects are appropriate as 
 
 To ensure that the `Maximal` model is indeed the appropriate model for these data, I will conduct approximated LOO CV pertaining to the `Correct` response.
 
-```{r, message = FALSE, warning = FALSE, eval = FALSE}
+```{r, message = FALSE, warning = FALSE}
 loo_Maximal <- loo(fit_Maximal, resp = "Correct")
 loo_Intercept <- loo(fit_Intercept, resp = "Correct")
 ```
@@ -352,7 +348,7 @@ To compare outputs of all three models, I'll transform posterior estimates from 
 
 First, I'll generate population-level estimates for all three models. (This "population-level" distinction applies only to the multilevel models.)
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 source("03_Transformed_posterior_fxns.R")
 
 dat_population <- transformed_groups(dat)
@@ -360,7 +356,7 @@ dat_population <- transformed_groups(dat)
 
 Next, I'll generate group-level estimates for all the grouping variables that are included in the `Intercept` and `Maximal` models.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 ## Subject-level estimates
 dat_subs <- transformed_groups(dat, "Sub")
 
@@ -388,7 +384,7 @@ dat_groups
 
 Next, I'll plot the population-level estimates from each model. This plot is Figure 1 in the main manuscript.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat_population %>%
   rename("Estimate" = mean, "CI.Lower" = q2.5, "CI.Upper" = q97.5) %>%
   mutate(Feedback = ifelse(Feedback == TRUE, "Feedback", "No Feedback")) %>%
@@ -436,7 +432,7 @@ ggplot(dat_population, aes(y = Estimate,
 
 Next, I'll compile the standardized effect sizes from each model.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat_d <- bind_rows(as_tibble(t(cbind(d_agg_fb, d_int_fb, d_max_fb))),
                    as_tibble(t(cbind(d_agg_nofb, d_int_nofb, d_max_nofb)))) %>%
   rename("Estimate" = V1, "SD" = V2, "CI.Lower" = `2.5%`, "CI.Upper" = `97.5%`) %>%
@@ -458,7 +454,7 @@ dat_d
 
 Finally, I'll compile Bayes factors for testing effects, with and without feedback, from each of the three candidate models.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat_bf <- as_tibble(c(1/bf_Aggregate$hypothesis$Evid.Ratio,
                       1/bf_Intercept$hypothesis$Evid.Ratio,
                       1/bf_Maximal$hypothesis$Evid.Ratio)) %>%
@@ -476,10 +472,6 @@ dat_bf
 These estimates of <i>d</i> and Bayes factors are presented in Table 2 in the main manuscript.
 
 ## Section 3: Simulate the reproducibility of `Aggregate`, `Intercept`, and `Maximal` models
-
-```{r message = FALSE, warning = FALSE, include = FALSE}
-load(here("sims", "sims_model.RData"))
-```
 
 The purpose of this simulation is to provide supporting evidence for the claim that findings that are generated from a maximal multilevel model are more reproducible than those that are generated by an aggregate or random-intercept model. I'm operationalizing reproducibility as <i>P</i>(estimate capture), or the rate at which a given estimate is captured by the 95% credible interval of a reference study.
 
@@ -514,11 +506,11 @@ bf_1 <- bf(Correct ~ Condition*Feedback +
 
 The models that are evaluated here are simpler than the ones that are used for the analyses in the main manuscript. They don't include any additional covariates (in the case of the `Aggregate` model) or response variables (in the case of the `Intercept` and `Maximal` models) outside of `Correct`/`test_effect`, `Condition`, and `Feedback`. (Code for the simulations is located in the `05_Sims_fxns.R` script.)
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 source("05_Sims_fxns.R")
 ```
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat_12_1 <- sim_fits(100, 120, 12, 2)
 dat_12_2 <- sim_fits(100, 120, 12, 1.66)
 dat_12_3 <- sim_fits(100, 120, 12, 1.33)
@@ -536,7 +528,7 @@ dat_36_6 <- sim_fits(100, 120, 36, .33)
 
 I'll merge all the data for summarizing.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 dat_12_1 %>%
   bind_rows(dat_12_2,
             dat_12_3,
@@ -553,7 +545,7 @@ dat_12_1 %>%
 
 In lieu of averaging, I'll aggregate the reproducibility rates from my simulations via a multivariate multilevel zero-one-inflated-beta (ZOIB) model with `group_sd` treated as a grouping variable.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 bf1 <- bf(mvbind(Aggregate_rep, Intercept_rep, Maximal_rep) ~ Feedback*n_items*model +
             (Feedback*n_items*model|r1|group_sd),
           family = zero_one_inflated_beta)
@@ -577,7 +569,7 @@ fit <- brm(bf1 + set_rescor(FALSE),
 
 Getting population-level estimates from the ZOIB model into a single data frame.
 
-```{r message = FALSE, warning = FALSE, eval = FALSE}
+```{r message = FALSE, warning = FALSE}
 ## Visualize fits
 dat_sims %>% 
   distinct(Feedback, n_items, model) %>%
@@ -639,6 +631,6 @@ testing for psychologists: A tutorial on the Savage–Dickey method. Cognitive P
 6. Oberauer, K. (2022). The importance of random slopes in mixed models for Bayesian hypothesis 
 testing. Psychological Science, 33, 648–665.
 
-7. Matuschek, H., Kliegl, R., Vasishth, S., Baayen, H., & Bates, D. (2017). Balancing Type I error 
+7. Matuschek, H., Kliegl, R., Vasishth, S., Baayen, H., & Bates, D. (2017). Balancing Type I error
 and power in linear mixed models. Journal of Memory and Language, 94, 305–315.
 
